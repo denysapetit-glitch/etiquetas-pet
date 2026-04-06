@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entregas Pet</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Fredoka', sans-serif; background: #FBF5EC; color: #3A2212; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px 80px; }
+  .container { width: 100%; max-width: 500px; }
+  .header { text-align: center; margin-bottom: 28px; }
+  .header span { font-size: 52px; display: block; margin-bottom: 6px; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .header h1 { font-size: 2rem; font-weight: 600; color: #E8500A; }
+  .header p { font-size: 0.9rem; color: #7A5C3E; margin-top: 4px; }
+  .card { background: #fff; border-radius: 20px; border: 1.5px solid #F0D9BC; padding: 20px; box-shadow: 0 4px 20px rgba(58,34,18,0.08); margin-bottom: 16px; }
+  .search-row { display: flex; gap: 10px; }
+  .search-row input { flex: 1; padding: 13px 16px; border: 1.5px solid #F0D9BC; border-radius: 14px; font-family: 'Fredoka', sans-serif; font-size: 1rem; color: #3A2212; outline: none; transition: border-color .2s; }
+  .search-row input:focus { border-color: #E8500A; }
+  .search-row input::placeholder { color: #C4A882; }
+  .search-row button { padding: 13px 20px; background: #E8500A; color: #fff; border: none; border-radius: 14px; font-family: 'Fredoka', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s, transform .1s; box-shadow: 0 4px 14px rgba(232,80,10,0.3); }
+  .search-row button:hover { background: #C43D04; transform: translateY(-1px); }
+  .search-row button:disabled { background: #ccc; transform: none; box-shadow: none; cursor: default; }
+  .status { text-align: center; padding: 20px; color: #7A5C3E; font-size: 0.95rem; }
+  .spin-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .spinner { width: 22px; height: 22px; border: 3px solid #F0D9BC; border-top-color: #E8500A; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results-label { font-size: 0.8rem; color: #7A5C3E; margin-bottom: 10px; }
+  .result-card { background: #fff; border: 1.5px solid #F0D9BC; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; transition: border-color .2s; }
+  .result-card:hover { border-color: #F5A623; }
+  .result-name { font-size: 1rem; font-weight: 600; color: #3A2212; }
+  .result-addr { font-size: 0.8rem; color: #7A5C3E; margin: 3px 0 10px; }
+  .pets-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pet-chip { background: #FFF1E0; border: 1.5px solid #F5A623; color: #C43D04; font-family: 'Fredoka', sans-serif; font-size: 0.88rem; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: background .15s, transform .1s; }
+  .pet-chip:hover { background: #F5A623; color: #fff; transform: scale(1.05); }
+  .confirm-info { background: #FFF8EE; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+  .confirm-pet { font-size: 1.3rem; font-weight: 600; color: #E8500A; margin-bottom: 4px; }
+  .confirm-tutor { font-size: 1rem; font-weight: 600; }
+  .confirm-addr { font-size: 0.82rem; color: #7A5C3E; margin-top: 2px; }
+  .back-btn { background: none; border: none; font-family: 'Fredoka', sans-serif; font-size: 0.9rem; color: #7A5C3E; cursor: pointer; margin-bottom: 14px; padding: 0; }
+  .back-btn:hover { color: #E8500A; }
+  .qty-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .qty-row label { font-size: 0.95rem; color: #7A5C3E; font-weight: 600; }
+  .qty-ctrl { display: flex; align-items: center; border: 1.5px solid #F0D9BC; border-radius: 12px; overflow: hidden; }
+  .qty-ctrl button { width: 36px; height: 36px; background: #FBF5EC; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; color: #E8500A; font-family: 'Fredoka', sans-serif; transition: background .1s; }
+  .qty-ctrl button:hover { background: #F0D9BC; }
+  .qty-ctrl span { width: 44px; text-align: center; font-size: 1rem; font-weight: 600; border-left: 1.5px solid #F0D9BC; border-right: 1.5px solid #F0D9BC; color: #3A2212; line-height: 36px; }
+  .gen-btn { width: 100%; padding: 14px; background: #E8500A; color: #fff; border: none; border-radius: 14px; font-family: 'Fredoka', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background .15s; box-shadow: 0 4px 16px rgba(232,80,10,0.3); }
+  .gen-btn:hover:not(:disabled) { background: #C43D04; }
+  .gen-btn:disabled { background: #ccc; box-shadow: none; cursor: default; }
+  .done-box { text-align: center; padding: 30px 20px; }
+  .done-box .icon { font-size: 52px; margin-bottom: 10px; }
+  .done-box p { color: #7A5C3E; margin-bottom: 20px; }
+  .nova-btn { padding: 12px 28px; background: #E8500A; color: #fff; border: none; border-radius: 14px; font-family: 'Fredoka', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .nova-btn:hover { background: #C43D04; }
+  .erro { background: #FFF0F0; border: 1.5px solid #F5C6C6; border-radius: 14px; padding: 14px; color: #C0392B; font-size: 0.9rem; text-align: center; }
+  .aviso-planilha { background: #FFF8E1; border: 1.5px solid #FFD54F; border-radius: 14px; padding: 12px 16px; margin-top: 12px; font-size: 0.82rem; color: #5D4037; text-align: left; line-height: 1.6; }
+  .aviso-planilha strong { color: #E8500A; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span>🐾</span>
+    <h1>Entregas Pet</h1>
+    <p>Busque e gere etiquetas na hora</p>
+  </div>
+
+  <div id="tela-busca">
+    <div class="card">
+      <div class="search-row">
+        <input id="inp" type="text" placeholder="Nome do tutor ou do pet...">
+        <button id="btnBuscar" onclick="buscar()">Buscar</button>
+      </div>
+    </div>
+    <div id="area-resultado"></div>
+  </div>
+
+  <div id="tela-confirmar" style="display:none;">
+    <div class="card">
+      <button class="back-btn" onclick="voltarBusca()">← Voltar</button>
+      <div class="confirm-info">
+        <div class="confirm-pet" id="c-pet"></div>
+        <div class="confirm-tutor" id="c-tutor"></div>
+        <div class="confirm-addr" id="c-addr"></div>
+      </div>
+      <div class="qty-row">
+        <label>Quantidade</label>
+        <div class="qty-ctrl">
+          <button onclick="mudaQtd(-1)">−</button>
+          <span id="qtd-display">1</span>
+          <button onclick="mudaQtd(1)">+</button>
+        </div>
+      </div>
+      <button class="gen-btn" id="btnGerar" onclick="gerar()">Baixar Etiqueta PDF</button>
+    </div>
+  </div>
+
+  <div id="tela-feito" style="display:none;">
+    <div class="card done-box">
+      <div class="icon">✅</div>
+      <p id="done-msg"></p>
+      <button class="nova-btn" onclick="reiniciar()">Gerar outra etiqueta</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID = '16aLq8UzMfWs78ewzGCmKvM_7DjL5IO7MqUce0BPb9SE';
+const API_KEY  = 'AIzaSyCDyW7kus9hKlENwRBn7txq-RoftQtv7Hw';
+const ABA      = 'novo';
+
+let selecionado = null, qtd = 1, dadosCache = null;
+
+// ── Pré-carrega imagem de fundo do template ──
+let fotoFundo = null;
+(function() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { fotoFundo = img; };
+  img.src = 'etiq entrega edit slide.png';
+})();
+
+function fmt(s) {
+  if (!s) return '';
+  const exc = ['de','da','do','dos','das','e','em'];
+  return s.trim().toLowerCase().split(/\s+/).map((w,i) =>
+    exc.includes(w) && i > 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)
+  ).join(' ');
+}
+function fmtBairro(b) {
+  const l = b.toLowerCase().trim();
+  if (l.includes('barra da tijuca')) return 'Barra';
+  if (l.includes('recreio')) return 'Recreio';
+  return fmt(b);
+}
+async function carregarDados() {
+  if (dadosCache) return dadosCache;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${ABA}!A:M?key=${API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Erro na API do Google'); }
+  dadosCache = (await res.json()).values || [];
+  return dadosCache;
+}
+function parseLinha(row, i) {
+  const g = n => String(row[n] || '').trim();
+  const pets = g(1).split(/,| e | E |&|\+| \/ /).map(p => fmt(p.trim())).filter(Boolean);
+  if (!pets.length) pets.push('Pet');
+  return { index:i, tutor:fmt(g(0)), pets, bairro:fmtBairro(g(12)), rua:fmt(g(9)), numero:g(10), comp:fmt(g(11)) };
+}
+async function buscar() {
+  const termo = document.getElementById('inp').value.trim();
+  const area = document.getElementById('area-resultado');
+  const btn = document.getElementById('btnBuscar');
+  if (!termo) return;
+  area.innerHTML = '<div class="status"><div class="spin-wrap"><div class="spinner"></div> Farejando dados...</div></div>';
+  btn.disabled = true;
+  try {
+    const rows = await carregarDados();
+    const t = termo.toLowerCase();
+    const found = rows.slice(1).map((r,i) => parseLinha(r,i+1))
+      .filter(r => r.tutor.toLowerCase().includes(t) || r.pets.some(p => p.toLowerCase().includes(t)));
+    btn.disabled = false;
+    if (!found.length) { area.innerHTML = '<div class="status">Nenhum resultado para "'+termo+'"</div>'; return; }
+    window._encontrados = found;
+    let html = '<div class="results-label">'+found.length+' resultado'+(found.length>1?'s':'')+' — clique no pet:</div>';
+    found.forEach((r,i) => {
+      html += `<div class="result-card"><div class="result-name">${r.tutor}</div><div class="result-addr">📍 ${r.bairro} · ${r.rua}${r.numero?', '+r.numero:''}${r.comp?' – '+r.comp:''}</div><div class="pets-row">`;
+      r.pets.forEach(p => { html += `<button class="pet-chip" onclick="selecionar(${i},'${p.replace(/'/g,"\\'")}')">🐾 ${p}</button>`; });
+      html += '</div></div>';
+    });
+    area.innerHTML = html;
+  } catch(e) {
+    btn.disabled = false;
+    let msgExtra = '';
+    if (e.message === 'Failed to fetch' || e.message.includes('fetch')) {
+      msgExtra = `
+        <div class="aviso-planilha">
+          <strong>Como resolver:</strong><br>
+          1. Abra a planilha no Google Sheets<br>
+          2. Clique em <strong>Compartilhar</strong> (canto superior direito)<br>
+          3. Mude para <strong>"Qualquer pessoa com o link pode ver"</strong><br>
+          4. Salve e tente buscar novamente
+        </div>`;
+    }
+    area.innerHTML = `<div class="erro">Erro: ${e.message}</div>${msgExtra}`;
+  }
+}
+function selecionar(i, pet) {
+  selecionado = { ...window._encontrados[i], pet };
+  qtd = 1;
+  document.getElementById('c-pet').textContent = pet;
+  document.getElementById('c-tutor').textContent = selecionado.tutor;
+  const end = selecionado.comp ? `${selecionado.rua}, ${selecionado.numero} - ${selecionado.comp}` : `${selecionado.rua}, ${selecionado.numero}`;
+  document.getElementById('c-addr').textContent = end;
+  document.getElementById('qtd-display').textContent = '1';
+  document.getElementById('tela-busca').style.display = 'none';
+  document.getElementById('tela-confirmar').style.display = 'block';
+}
+function mudaQtd(d) { qtd = Math.max(1,qtd+d); document.getElementById('qtd-display').textContent = qtd; }
+function voltarBusca() { document.getElementById('tela-confirmar').style.display='none'; document.getElementById('tela-busca').style.display='block'; }
+
+// ── Fundo de patinhas, corações e ossinhos ──
+function desenharFundo(doc, W, H) {
+  doc.setFillColor(250, 247, 240);
+  doc.rect(0, 0, W, H, 'F');
+
+  function patinha(x, y, s) {
+    doc.setFillColor(210, 203, 192);
+    doc.ellipse(x, y, s*1.1, s*0.85, 'F');
+    doc.circle(x-s*0.85, y-s*0.95, s*0.52, 'F');
+    doc.circle(x,         y-s*1.25, s*0.52, 'F');
+    doc.circle(x+s*0.85, y-s*0.95, s*0.52, 'F');
+  }
+  function coracao(x, y, s) {
+    doc.setFillColor(230, 210, 195);
+    doc.circle(x-s*0.5, y, s*0.5, 'F');
+    doc.circle(x+s*0.5, y, s*0.5, 'F');
+    doc.ellipse(x, y+s*0.45, s*0.72, s*0.55, 'F');
+  }
+  function ossinho(x, y, s) {
+    doc.setFillColor(215, 207, 196);
+    doc.rect(x-s, y-s*0.22, s*2, s*0.44, 'F');
+    doc.circle(x-s, y-s*0.28, s*0.32, 'F');
+    doc.circle(x-s, y+s*0.28, s*0.32, 'F');
+    doc.circle(x+s, y-s*0.28, s*0.32, 'F');
+    doc.circle(x+s, y+s*0.28, s*0.32, 'F');
+  }
+
+  const grid = [
+    {f:'p',x:8,  y:9,  s:2.1},{f:'c',x:22, y:7,  s:1.8},{f:'o',x:40, y:10, s:2.3},
+    {f:'p',x:58, y:7,  s:1.9},{f:'c',x:74, y:10, s:2.0},{f:'o',x:90, y:7,  s:2.1},
+    {f:'p',x:108,y:10, s:1.9},{f:'c',x:124,y:7,  s:1.8},{f:'o',x:141,y:9,  s:2.0},
+    {f:'o',x:14, y:24, s:2.2},{f:'p',x:32, y:22, s:2.3},{f:'c',x:52, y:25, s:1.9},
+    {f:'o',x:70, y:22, s:2.1},{f:'p',x:88, y:25, s:2.2},{f:'c',x:108,y:22, s:1.9},
+    {f:'o',x:128,y:24, s:2.2},{f:'p',x:144,y:22, s:2.0},
+    {f:'c',x:7,  y:40, s:1.9},{f:'o',x:25, y:38, s:2.2},{f:'p',x:46, y:41, s:2.3},
+    {f:'c',x:65, y:38, s:1.8},{f:'o',x:83, y:41, s:2.2},{f:'p',x:102,y:38, s:2.0},
+    {f:'c',x:120,y:41, s:1.9},{f:'o',x:140,y:38, s:2.1},
+    {f:'p',x:10, y:56, s:2.1},{f:'c',x:28, y:54, s:1.8},{f:'o',x:48, y:57, s:2.3},
+    {f:'p',x:68, y:54, s:2.0},{f:'c',x:86, y:57, s:1.9},{f:'o',x:105,y:54, s:2.2},
+    {f:'p',x:124,y:57, s:2.0},{f:'c',x:143,y:54, s:1.8},
+    {f:'o',x:7,  y:72, s:2.2},{f:'p',x:26, y:70, s:2.3},{f:'c',x:46, y:73, s:1.9},
+    {f:'o',x:65, y:70, s:2.1},{f:'p',x:84, y:73, s:2.2},{f:'c',x:103,y:70, s:1.8},
+    {f:'o',x:122,y:73, s:2.2},{f:'p',x:143,y:70, s:2.0},
+    {f:'c',x:10, y:87, s:1.9},{f:'o',x:30, y:85, s:2.1},{f:'p',x:50, y:88, s:2.3},
+    {f:'c',x:70, y:85, s:1.8},{f:'o',x:90, y:88, s:2.2},{f:'p',x:110,y:85, s:2.0},
+    {f:'c',x:130,y:88, s:1.9},{f:'o',x:145,y:85, s:2.0},
+  ];
+
+  grid.forEach(e => {
+    if (e.f==='p') patinha(e.x,e.y,e.s);
+    else if (e.f==='c') coracao(e.x,e.y,e.s);
+    else ossinho(e.x,e.y,e.s);
+  });
+}
+
+function gerar() {
+  const btn = document.getElementById('btnGerar');
+  btn.disabled = true; btn.textContent = 'Gerando...';
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:[100,150] });
+      const W=150, H=100, s=selecionado;
+      const end = s.comp ? `${s.rua}, ${s.numero} - ${s.comp}` : `${s.rua}, ${s.numero}`;
+
+      if (fotoFundo) {
+        // ── Fundo: imagem real do template ──
+        doc.addImage(fotoFundo, 'PNG', 0, 0, W, H);
+
+        // Apaga placeholders com retângulos na cor de fundo
+        doc.setFillColor(250, 247, 240);
+        doc.rect(78,  5,  66, 20, 'F');   // {{bairro}}
+        doc.rect(20, 33, 122, 17, 'F');   // {{tutor}}
+        doc.rect(20, 52, 122, 19, 'F');   // {{endereço}}
+        doc.rect(19, 79,  46, 15, 'F');   // {{qtd}} Pacotes
+        doc.rect(78, 79,  65, 15, 'F');   // {{nome_pet}}
+
+        // Bairro
+        doc.setFontSize(17); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+        doc.text(s.bairro, W-9, 18, { align:'right' });
+
+        // Tutor
+        doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+        const tutorLines = doc.splitTextToSize(s.tutor, 118);
+        doc.text(tutorLines, 22, 43);
+
+        // Endereço
+        doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+        const endLines = doc.splitTextToSize(end, 118);
+        doc.text(endLines, 22, 63);
+
+        // Quantidade
+        doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+        doc.text(String(qtd) + ' Pacotes', 21, 89);
+
+        // Pet
+        doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+        doc.text(s.pet, W-9, 89, { align:'right' });
+
+      } else {
+        // ── Fallback: fundo desenhado (PNG não carregado) ──
+        desenharFundo(doc, W, H);
+
+        doc.setFillColor(232, 80, 10);
+        doc.circle(13, 13, 7.5, 'F');
+        doc.setFillColor(255,255,255);
+        doc.circle(13, 11, 3.2, 'F');
+        doc.ellipse(13, 16.5, 3.8, 3, 'F');
+        doc.circle(10.8, 8.8, 1.4, 'F');
+        doc.circle(15.2, 8.8, 1.4, 'F');
+        doc.setTextColor(25,25,25); doc.setFontSize(12); doc.setFont('helvetica','bold');
+        doc.text('apetit pet', 24, 13);
+        doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(110,90,75);
+        doc.text('delivery', 24, 18);
+
+        doc.setFontSize(17); doc.setFont('helvetica','bold'); doc.setTextColor(232,80,10);
+        doc.text(s.bairro, W-8, 15, { align:'right' });
+
+        doc.setDrawColor(180,165,148); doc.setLineWidth(0.4);
+        doc.line(8, 27, W-8, 27);
+
+        doc.setFillColor(50,50,50);
+        doc.circle(13, 37, 3.2, 'F');
+        doc.ellipse(13, 43.5, 4.5, 3.2, 'F');
+        doc.setTextColor(120,100,85); doc.setFontSize(7); doc.setFont('helvetica','normal');
+        doc.text('Responsavel', 22, 33);
+        doc.setTextColor(20,20,20); doc.setFontSize(12); doc.setFont('helvetica','bold');
+        const tutorLines = doc.splitTextToSize(s.tutor, W-32);
+        doc.text(tutorLines, 22, 40);
+
+        doc.setDrawColor(195,185,172); doc.setLineWidth(0.3);
+        const yAposTutor = 40 + (tutorLines.length-1)*5;
+        doc.line(8, yAposTutor+6, W-8, yAposTutor+6);
+
+        const yEnd = yAposTutor + 14;
+        doc.setFillColor(50,50,50);
+        doc.circle(13, yEnd-3, 3, 'F');
+        doc.triangle(10.6, yEnd-1, 15.4, yEnd-1, 13, yEnd+4, 'F');
+        doc.setFillColor(250,247,240); doc.circle(13, yEnd-3, 1.3, 'F');
+        doc.setTextColor(120,100,85); doc.setFontSize(7); doc.setFont('helvetica','normal');
+        doc.text('Entrega em:', 22, yEnd-5);
+        doc.setTextColor(20,20,20); doc.setFontSize(11); doc.setFont('helvetica','bold');
+        const endLines = doc.splitTextToSize(end, W-32);
+        doc.text(endLines, 22, yEnd+1);
+
+        doc.setDrawColor(180,165,148); doc.setLineWidth(0.4);
+        doc.line(8, 78, W-8, 78);
+
+        doc.setFillColor(50,50,50); doc.rect(7, 82, 10, 8, 'F');
+        doc.setFillColor(75,75,75); doc.rect(7, 80, 10, 3, 'F');
+        doc.setDrawColor(250,247,240); doc.setLineWidth(0.6); doc.line(12, 80, 12, 90);
+        doc.setTextColor(20,20,20); doc.setFontSize(13); doc.setFont('helvetica','bold');
+        doc.text(String(qtd)+' Pacotes', 20, 89);
+
+        doc.setFillColor(50,50,50);
+        doc.circle(W-30, 82, 3.5, 'F');
+        doc.ellipse(W-30, 88.5, 3.8, 4, 'F');
+        doc.circle(W-27.2, 79.2, 1.5, 'F');
+        doc.setTextColor(20,20,20); doc.setFontSize(13); doc.setFont('helvetica','bold');
+        doc.text(s.pet, W-8, 89, { align:'right' });
+      }
+
+      // ── Nome do arquivo com data/hora ──
+      const agora = new Date();
+      const dataHora = `${agora.getDate().toString().padStart(2,'0')}-${(agora.getMonth()+1).toString().padStart(2,'0')}-${agora.getFullYear()}_${agora.getHours().toString().padStart(2,'0')}h${agora.getMinutes().toString().padStart(2,'0')}`;
+      doc.save(`Etiqueta - ${s.tutor} - ${s.pet} - ${dataHora}.pdf`);
+
+      btn.disabled = false; btn.textContent = 'Baixar Etiqueta PDF';
+      document.getElementById('tela-confirmar').style.display = 'none';
+      document.getElementById('done-msg').textContent = `Etiqueta de ${s.pet} (${s.tutor}) gerada!`;
+      document.getElementById('tela-feito').style.display = 'block';
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Baixar Etiqueta PDF';
+      alert('Erro ao gerar PDF: ' + e.message);
+    }
+  }, 300);
+}
+
+function reiniciar() {
+  selecionado = null; qtd = 1;
+  document.getElementById('tela-feito').style.display = 'none';
+  document.getElementById('area-resultado').innerHTML = '';
+  document.getElementById('inp').value = '';
+  document.getElementById('tela-busca').style.display = 'block';
+  document.getElementById('inp').focus();
+}
+
+document.getElementById('inp').addEventListener('keydown', e => { if(e.key==='Enter') buscar(); });
+</script>
+</body>
+</html>
